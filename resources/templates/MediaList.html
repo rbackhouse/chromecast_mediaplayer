@@ -1,0 +1,14 @@
+<div data-role="header" data-position="fixed">
+	<a href="#playing" data-role="button" data-inline="true" data-theme="b">Playing</a> 
+	<h1>Media</h1>
+	<a href="#medialist" id="reload" data-role="button" data-inline="true" data-theme="b">Reload</a>
+</div>
+<div data-role="content">
+	<div>
+		<ul id="mediaList" data-role="listview" data-theme="g" data-filter="true">
+		<% _.each(mediaList, function(media) { %>
+			<li><a href="#playing" id="<%= media.id %>"><%= media.name %></a></li> 
+		<% }); %>
+		</ul>
+	</div>
+</div>
