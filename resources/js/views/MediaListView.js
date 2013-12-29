@@ -22,7 +22,7 @@ define([
 function($, Backbone, _, template){
 	var View = Backbone.View.extend({
 		events: {
-			"click #mediaList li" : "aetPlaying",
+			"click #mediaList li" : "setPlaying",
 			"click #reload" : function() {
 				this.mediaList.url +="/reload";
 				this.mediaList.fetch({
@@ -47,7 +47,7 @@ function($, Backbone, _, template){
 		render: function(){
 			$(this.el).html( this.template );
 		},
-		aetPlaying: function(evt) {
+		setPlaying: function(evt) {
 			$.ajax({
 				url: "./rest/playing/"+evt.target.id,
 				type: "PUT",

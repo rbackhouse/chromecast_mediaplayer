@@ -99,11 +99,10 @@ function($, Backbone, _, chromecast, template){
 			var seconds = position - minutes * 60;
 			seconds = (seconds < 10 ? '0' : '') + seconds;
 			$("#currentpos").text(minutes+" mins : "+seconds + " secs of ["+durmins+" mins : "+dursecs+" secs]");
-			
 			var currentDuration = $("#position").attr("max");
 			
-			if (duration > 0 && currentDuration !== duration) {
-				console.log("position: "+position+" duration: "+duration+" currentDuration:"+currentDuration);
+			if (duration > 0 && parseInt(currentDuration) !== duration) {
+				console.log("position: "+position+" currentDuration:"+currentDuration+ " "+minutes+" mins : "+seconds + " secs of ["+durmins+" mins : "+dursecs+" secs]");
 				$("#position").attr("max", duration);
 				$("#position").slider('refresh');
 			}

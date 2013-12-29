@@ -74,8 +74,7 @@ function($) {
 
 			castApi.launch(launchRequest, function(activity) {
 				if (activity.status == 'running') {
-					currentActivity = activity.activityId;
-					this._setActivity(currentActivity);
+					this._setActivity(activity.activityId);
 					castApi.addMediaStatusListener(currentActivity, statusListener);
 					castApi.loadMedia(currentActivity, loadRequest, function(mediaResult) {
 						console.log("loadMedia: "+JSON.stringify(mediaResult));
@@ -106,7 +105,6 @@ function($) {
 					console.log("stopActivity: "+JSON.stringify(mediaResult));
 				});
 				castApi.removeMediaStatusListener(currentActivity, statusListener);
-				currentActivity = undefined;
 				this._clearActivity();
 			}			
 		},
@@ -133,6 +131,17 @@ function($) {
 			selectedReceiver = receivers[index];
 		},
 		_setActivity: function(activityId) {
+			currentActivity = activityId;
+			this.statusCheckerId = setInterval(function() {
+				castApi.getMediaStatus(currentActivity, function(mediaStatus) {
+					if (mediaStatus.status) {
+						statusListener(mediaStatus.status);
+						if (mediaStatus.status.position > 0) {
+							this._setPosition(mediaStatus.status);
+						}
+					}
+				}.bind(this));
+			}.bind(this), 1000);
 			$.ajax({
 				url: "./rest/activity/"+activityId,
 				type: "PUT",
@@ -148,6 +157,8 @@ function($) {
 			});
 		},
 		_clearActivity: function() {
+			clearInterval(this.statusCheckerId);
+			currentActivity = undefined;
 			$.ajax({
 				url: "./rest/activity",
 				type: "DELETE",
@@ -156,6 +167,33 @@ function($) {
 				dataType: "text",
 				success: function(data, textStatus, jqXHR) {
 					console.log(data);
+				}.bind(this),
+				error: function(jqXHR, textStatus, errorThrown) {
+					console.log("download error : "+textStatus);
+				}
+			});
+			$.ajax({
+				url: "./rest/position",
+				type: "DELETE",
+				headers: { "cache-control": "no-cache" },
+				contentTypeString: "application/x-www-form-urlencoded; charset=utf-8",
+				dataType: "text",
+				success: function(data, textStatus, jqXHR) {
+				}.bind(this),
+				error: function(jqXHR, textStatus, errorThrown) {
+					console.log("download error : "+textStatus);
+				}
+			});
+		},
+		_setPosition: function(status) {
+			$.ajax({
+				url: "./rest/position/"+status.position+"/"+status.duration,
+				type: "PUT",
+				headers: { "cache-control": "no-cache" },
+				contentTypeString: "application/x-www-form-urlencoded; charset=utf-8",
+				dataType: "text",
+				success: function(data, textStatus, jqXHR) {
+					//console.log(data);
 				}.bind(this),
 				error: function(jqXHR, textStatus, errorThrown) {
 					console.log("download error : "+textStatus);
