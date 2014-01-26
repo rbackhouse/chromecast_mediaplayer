@@ -1,0 +1,12 @@
+<?xml version='1.0' encoding='utf-8'?>
+<widget id="org.potpie.chromecast.mediaplayer" version="0.0.1" xmlns="http://www.w3.org/ns/widgets" xmlns:cdv="http://cordova.apache.org/ns/1.0">
+    <name>ChromecastMediaplayer</name>
+    <description>
+        Simple Chromecast Mediaplayer 
+    </description>
+    <author email="richardabackhouse@gmail.com" href="https://github.com/rbackhouse/chromecast_cordova_plugin">
+        Richard Backhouse
+    </author>
+    <content src="cordovaindex.html" />
+    <access origin="*" />
+</widget>

@@ -17,9 +17,10 @@
 define([
 		'jquery', 
 		'backbone',
-		'underscore', 
+		'underscore',
+		'../uiconfig', 
 		'text!templates/MediaList.html'], 
-function($, Backbone, _, template){
+function($, Backbone, _, config, template){
 	var View = Backbone.View.extend({
 		events: {
 			"click #mediaList li" : "setPlaying",
@@ -49,7 +50,7 @@ function($, Backbone, _, template){
 		},
 		setPlaying: function(evt) {
 			$.ajax({
-				url: "./rest/playing/"+evt.target.id,
+				url: config.baseUrl+"/rest/playing/"+evt.target.id,
 				type: "PUT",
 				headers: { "cache-control": "no-cache" },
 				contentTypeString: "application/x-www-form-urlencoded; charset=utf-8",

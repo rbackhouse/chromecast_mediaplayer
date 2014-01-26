@@ -14,7 +14,7 @@
 * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 * DEALINGS IN THE SOFTWARE.
 */
-define(['backbone'], function(Backbone) {
+define(['backbone', '../uiconfig'], function(Backbone, config) {
 	var PlayMedia = Backbone.Model.extend({
 		defaults: {
 			id: null,
@@ -22,7 +22,7 @@ define(['backbone'], function(Backbone) {
 			url: null,
 			activityId: null
 		},
-		url: "./rest/playing"
+		url: config.baseUrl+"/rest/playing"
 	});
 	
 	return PlayMedia;

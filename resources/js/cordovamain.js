@@ -14,10 +14,27 @@
 * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 * DEALINGS IN THE SOFTWARE.
 */
-define(['backbone', './Media', '../uiconfig'], function(Backbone, Media, config){
-	var MediaList = Backbone.Collection.extend({
-		model: Media,
-		url: config.baseUrl+"/rest/media"
-	});
-	return MediaList;
+
+require.config({
+	baseUrl: 'js/',
+	directInject: true,
+	paths: {
+		jquery: '../lib/jquery/jquery-2.0.3',
+		jquerymobile: '../lib/mobile/jquery.mobile-1.3.2',
+		underscore: '../lib/underscore/underscore-1.5.2',
+		backbone: '../lib/backbone/backbone-1.1.0',
+		text: '../lib/requirejs/text',
+		templates: '../templates'
+	},
+	shim: {
+		'backbone' : {
+			deps: ['underscore', 'jquery'],
+			exports: 'Backbone'
+		},
+		'underscore' : {
+			exports: '_'
+		}
+	}
 });
+
+require(['app']);

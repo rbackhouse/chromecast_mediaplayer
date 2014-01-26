@@ -19,8 +19,15 @@ define([
 		'backbone',
 		'underscore',
 		'chromecast',
+		'../uiconfig',
 		'text!templates/Playing.html'], 
-function($, Backbone, _, chromecast, template){
+function($, Backbone, _, chromecastWeb, config, template) {
+	var chromecast;
+	if (window.cordova) {
+		chromecast = ChromecastPlugin;
+	} else {
+		chromecast = chromecastWeb;
+	}
 	var View = Backbone.View.extend({
 		events: {
 			"click #playPause" : function() {
@@ -39,8 +46,13 @@ function($, Backbone, _, chromecast, template){
 					$("#playPause .ui-btn-text").html("Pause");
 					$("#playPause").buttonMarkup({icon : "pauseIcon" });
 					var url = this.playing.get("url");
+					if (window.cordova) {
+						url = config.baseUrl+"/"+url;
+					} else {
+						url = "http://"+window.location.host+"/"+url;
+					}
 					chromecast.addStatusListener(this.statusListener);
-					chromecast.cast("http://"+window.location.host+"/"+url);
+					chromecast.cast(url);
 				}
 			},
 			"click #stop" : function() {
@@ -76,17 +88,29 @@ function($, Backbone, _, chromecast, template){
 				this.state = "play";
 				$("#playPause .ui-btn-text").html("Pause");
 				$("#playPause").buttonMarkup({icon : "pauseIcon" });
-				chromecast.setCurrentActivity(this.playing.get("activityId"));
+				if (!window.cordova) {
+					chromecast.setCurrentActivity(this.playing.get("activityId"));
+				}
 			}
-			chromecast.getReceivers(function(receivers) {
-				setTimeout(function() {
-					receivers.forEach(function(receiver, index) {
-						$("#receivers").append ("<option value="+index+">"+receiver.name+"</option>");
-					});
+			if (window.cordova) {
+				chromecast.addReceiverListener(function(receiver) {
+					console.log("Adding receiver "+ receiver.id);
+					$("#receivers").append ("<option value="+receiver.index+">"+receiver.name+"</option>");
 					$("#receivers").val(0);
 					$("#receivers").selectmenu ("refresh");
-				}, 500);
-			});
+					ChromecastPlugin.setReceiver(0);
+				});
+			} else {
+				chromecast.getReceivers(function(receivers) {
+					setTimeout(function() {
+						receivers.forEach(function(receiver, index) {
+							$("#receivers").append ("<option value="+index+">"+receiver.name+"</option>");
+						});
+						$("#receivers").val(0);
+						$("#receivers").selectmenu ("refresh");
+					}, 500);
+				});
+			}
 		},
 		statusListener: function(status) {
 			var duration = Math.floor(status.duration);
@@ -105,6 +129,9 @@ function($, Backbone, _, chromecast, template){
 				console.log("position: "+position+" currentDuration:"+currentDuration+ " "+minutes+" mins : "+seconds + " secs of ["+durmins+" mins : "+dursecs+" secs]");
 				$("#position").attr("max", duration);
 				$("#position").slider('refresh');
+			}
+			if (status.statusMessage) {
+				$("#statusMessage").text(status.statusMessage);
 			}
 		}
 	});

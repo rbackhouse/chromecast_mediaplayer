@@ -15,10 +15,22 @@
 * DEALINGS IN THE SOFTWARE.
 */
 
-define(['jquery', 'mobileconfig', 'routers/router', 'chromecast'], function($, mobileconfig, router, chromecast) {
+define(['jquery', 'mobileconfig', 'routers/router'], function($, mobileconfig, router) {
+	var uiRouter;
+	
+	function ready() {
+    	console.log("ready");
+    	uiRouter = new router();
+	}
+	
     $(document).ready(function() {
-		console.log("ready");
-		this.router = new router();
+	    if (window.cordova) {
+	    	require(['deviceReady!'], function() {
+	    		ready();
+	    	});
+	    } else {
+    		ready();
+	    }
 	});
 	
 	return {};
