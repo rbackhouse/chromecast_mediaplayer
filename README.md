@@ -13,7 +13,9 @@ the device needs to be registered.
 Grab a copy of the sender web application
 
 git clone https://github.com/rbackhouse/chromecast_mediaplayer.git
+
 cd chromecast_mediaplayer
+
 npm install
 
 ## Running the sender application
