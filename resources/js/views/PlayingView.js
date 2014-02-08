@@ -51,7 +51,6 @@ function($, Backbone, _, chromecastWeb, config, template) {
 					} else {
 						url = "http://"+window.location.host+"/"+url;
 					}
-					chromecast.addStatusListener(this.statusListener);
 					chromecast.cast(url);
 				}
 			},
@@ -60,7 +59,6 @@ function($, Backbone, _, chromecastWeb, config, template) {
 				$("#playPause .ui-btn-text").html("Play");
 				$("#playPause").buttonMarkup({icon : "playIcon" });
 				chromecast.stopCast();
-				chromecast.removeStatusListener(this.statusListener);
 				$("#currentpos").text("0 mins : 00 secs of [0 mins : 00 secs]");
 				$("#position").val(0);
 			},
@@ -71,9 +69,6 @@ function($, Backbone, _, chromecastWeb, config, template) {
 					console.log("position set to "+position);
 					chromecast.play(position);
 				}
-			},
-			"change #receivers" : function() {
-				chromecast.setReceiver($("#receivers").val());
 			}
 		},
 		initialize: function(options) {
@@ -81,36 +76,15 @@ function($, Backbone, _, chromecastWeb, config, template) {
 			this.currentPosition = 0;
 			this.playing = options.playing;
 			this.template = _.template( template, { playing: this.playing.toJSON() } );
+			chromecast.addStatusListener(this.statusListener);
 		},
 		render: function() {
 			$(this.el).html( this.template );
-			if (this.playing.get("activityId") !== null) {
-				this.state = "play";
-				$("#playPause .ui-btn-text").html("Pause");
-				$("#playPause").buttonMarkup({icon : "pauseIcon" });
-				if (!window.cordova) {
-					chromecast.setCurrentActivity(this.playing.get("activityId"));
-				}
-			}
-			if (window.cordova) {
-				chromecast.addReceiverListener(function(receiver) {
-					console.log("Adding receiver "+ receiver.id);
-					$("#receivers").append ("<option value="+receiver.index+">"+receiver.name+"</option>");
-					$("#receivers").val(0);
-					$("#receivers").selectmenu ("refresh");
-					ChromecastPlugin.setReceiver(0);
-				});
-			} else {
-				chromecast.getReceivers(function(receivers) {
-					setTimeout(function() {
-						receivers.forEach(function(receiver, index) {
-							$("#receivers").append ("<option value="+index+">"+receiver.name+"</option>");
-						});
-						$("#receivers").val(0);
-						$("#receivers").selectmenu ("refresh");
-					}, 500);
-				});
-			}
+			chromecast.addReceiverListener(function() {
+				$("#statusMessage").text("Receiver available");
+				$("#playPause").removeClass( "ui-disabled" );
+				$("#stop").removeClass( "ui-disabled" );
+			}.bind(this));
 		},
 		statusListener: function(status) {
 			var duration = Math.floor(status.duration);
@@ -132,6 +106,11 @@ function($, Backbone, _, chromecastWeb, config, template) {
 			}
 			if (status.statusMessage) {
 				$("#statusMessage").text(status.statusMessage);
+			}
+			if (status.state === "PLAYING") {
+				this.state = "play";
+				$("#playPause .ui-btn-text").html("Pause");
+				$("#playPause").buttonMarkup({icon : "pauseIcon" });
 			}
 		}
 	});

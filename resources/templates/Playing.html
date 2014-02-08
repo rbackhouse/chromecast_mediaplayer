@@ -7,18 +7,13 @@
 	<div class="ui-body ui-body-b" id="currentpos">0 mins : 00 secs of [0 mins : 00 secs]</div>
 	<div class="ui-body ui-body-b" id="statusMessage"></div>
 	<div data-role="fieldcontain">
-	   <label for="receivers">Receivers:</label>
-	   <select name="receivers" id="receivers">
-	   </select>
-	</div>   
-	<div data-role="fieldcontain">
 	   <label for="position">Position:</label>
 		<input type="range" name="slider" id="position" value="0" min="0" max="3600" data-highlight="true"></input>
 	</div>
 </div>
 <div data-id="thefooter "data-role="footer" data-position="fixed" class="ui-bar">
 	<div data-role="controlgroup" data-type="horizontal">
-		<a href="#playing" id="playPause" data-role="button" data-icon="playIcon">Play</a> 
-		<a href="#playing" id="stop" data-role="button" data-icon="stopIcon">Stop</a> 
+		<a href="#playing" id="playPause" data-role="button" data-icon="playIcon" class="ui-disabled">Play</a> 
+		<a href="#playing" id="stop" data-role="button" data-icon="stopIcon" class="ui-disabled">Stop</a> 
 	</div>		
 </div>		

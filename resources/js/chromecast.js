@@ -15,98 +15,137 @@
 * DEALINGS IN THE SOFTWARE.
 */
 
-var applicationID = 'Change Me';
-var castApi;
-var receivers;
-var selectedReceiver;
-var currentActivity;
-var statusListeners = [];
-var callbacks = [];
+define(function() {
+	var currentMedia;
+	var session;
 
-var initializeCastApi = function() {
-  	castApi = new cast.Api();
-	castApi.addReceiverListener(applicationID, function(list) {
-		receivers = [];
-		if (list.length > 0) {
-			selectedReceiver = list[0];
-		}
-  		list.forEach(function(receiver) {
-  			console.log("adding receiver : "+receiver.name);
-  			receivers.push(receiver);
-  		});
-  		callbacks.forEach(function(cb) {
-  			cb(receivers);
-  		});
-  		callbacks = [];
-  	});
-};
+	var statusListeners = [];
+	var callbacks = [];
 
-if (window.cast && window.cast.isAvailable) {
-	initializeCastApi();
-} else {
-	window.addEventListener("message", function(event) {
-    	if (event.source == window && event.data && event.data.source == "CastApi" && event.data.event == "Hello"){
-      		initializeCastApi();
-    	}
-  	});
-}
+	var initializeCastApi = function() {
+		var applicationID = chrome.cast.media.DEFAULT_MEDIA_RECEIVER_APP_ID;
+		var sessionRequest = new chrome.cast.SessionRequest(applicationID);
+		var apiConfig = new chrome.cast.ApiConfig(sessionRequest, 
+			function(e) {
+				session = e;
+				currentMedia = session.media[0];
+				currentMedia.addUpdateListener(updateListener);
+				updateListener();
+			}, 
+			function(e) {
+				if (e === 'available') {
+					callbacks.forEach(function(cb) {
+						cb();
+					});
+				}
+			}
+		);
 
-var statusListener = function(mediaPlayerStatus) {
-	var status = {state: mediaPlayerStatus.state, position: mediaPlayerStatus.position, duration: mediaPlayerStatus.duration};
-	statusListeners.forEach(function(listener) {
-		listener(status);
-	});
-};
+		chrome.cast.initialize(apiConfig, 
+			function() {
+				console.log("onInitSuccess");
+			}, 
+			function(error){
+				console.log("onError");
+			}
+		);
+	};
 
-define(
-['jquery'],
-function($) {
+	if (!chrome.cast || !chrome.cast.isAvailable) {
+		setTimeout(initializeCastApi, 1000);
+	}
+
+	var updateListener = function(isAlive) {
+		var status = {
+			isAlive: isAlive,
+			state: currentMedia.playerState, 
+			position: currentMedia.currentTime, 
+			duration: currentMedia.media.duration,
+			playbackRate: currentMedia.playbackRate,
+			statusMessage: currentMedia.playerState
+		};
+		statusListeners.forEach(function(listener) {
+			listener(status);
+		});
+	};
+
 	return {
 		cast: function(mediaurl) {
-			if (currentActivity) {
-				return;
+			if (!session) {
+				chrome.cast.requestSession(
+					function(e) {
+						session = e;
+						this._loadUrl(mediaurl);
+					}.bind(this), 
+					function(error) {
+						console.log("cast error : "+error);
+					}
+				);	
 			}
-			var launchRequest = new cast.LaunchRequest(applicationID, selectedReceiver);
-			launchRequest.parameters = '';
-
-			var loadRequest = new cast.MediaLoadRequest(mediaurl);
-			loadRequest.autoplay = true;
-
-			castApi.launch(launchRequest, function(activity) {
-				if (activity.status == 'running') {
-					this._setActivity(activity.activityId);
-					castApi.addMediaStatusListener(currentActivity, statusListener);
-					castApi.loadMedia(currentActivity, loadRequest, function(mediaResult) {
-						console.log("loadMedia: "+JSON.stringify(mediaResult));
-					});
-    			} else {
-      				console.log('Launch failed: ' + activity.errorString);
-    			}
-  			}.bind(this));
 		},
 		pause: function() {
-			if (currentActivity) {
-				castApi.pauseMedia(currentActivity, function(mediaResult) {
-					console.log("pauseMedia: "+JSON.stringify(mediaResult));
-				});
+			if (currentMedia) {
+				currentMedia.pause(null, 
+					function() {
+						console.log("Paused");
+					}, 
+					function(error) {
+						console.log("pause error");
+					}
+				);
 			}			
 		},
 		play: function(position) {
-			if (currentActivity) {
-				var mediaPlayRequest = position ? new cast.MediaPlayRequest(position) : new cast.MediaPlayRequest();
-				castApi.playMedia(currentActivity, mediaPlayRequest, function(mediaResult) {
-					console.log("playMedia: "+JSON.stringify(mediaResult));
-				});
+			if (currentMedia) {
+				if (position) {
+					var seekCommand = new chrome.cast.media.SeekRequest();
+					seekCommand.currentTime = position;
+				
+					currentMedia.seek(seekCommand,
+						function() {
+							console.log("Seeked");
+						}, 
+						function(error) {
+							console.log("seek error");
+						}
+					);
+				} else {
+					currentMedia.play(null, 
+						function() {
+							console.log("Playing");
+						}, 
+						function(error) {
+							console.log("play error");
+						}
+					);
+				}
 			}			
 		},
 		stopCast: function() {
-			if (currentActivity) {
-				castApi.stopActivity(currentActivity, function(mediaResult) {
-					console.log("stopActivity: "+JSON.stringify(mediaResult));
-				});
-				castApi.removeMediaStatusListener(currentActivity, statusListener);
-				this._clearActivity();
-			}			
+			if (currentMedia) {
+				currentMedia.stop(null, 
+					function() {
+						console.log("stopActivity: ");
+						currentMedia.removeUpdateListener(updateListener);
+						currentMedia = undefined;
+						session.stop(
+							function() {
+								console.log("Stopped");
+								session = undefined;
+							}, 
+							function(error) {
+								console.log("stop session error : "+error);
+								session = undefined;
+							}
+						);
+					}, 
+					function(error) {
+						console.log("stop error : "+error);
+						session = undefined;
+						currentMedia = undefined;
+					}
+				);
+			}
 		},
 		addStatusListener: function(listener) {
 			statusListeners.push(listener);
@@ -117,88 +156,28 @@ function($) {
 				statusListeners.slice(index, 1);
 			}
 		},
-		setCurrentActivity: function(activity) {
-			currentActivity = activity;
+		addReceiverListener: function(cb) {
+			callbacks.push(cb);
 		},
-		getReceivers: function(cb) {
-			if (receivers) {
-				cb(receivers);
-			} else {
-				callbacks.push(cb);
-			}
+		getState: function() {
+			return currentMedia ? currentMedia.playerState : "";
 		},
-		setReceiver: function(index) {
-			selectedReceiver = receivers[index];
-		},
-		_setActivity: function(activityId) {
-			currentActivity = activityId;
-			this.statusCheckerId = setInterval(function() {
-				castApi.getMediaStatus(currentActivity, function(mediaStatus) {
-					if (mediaStatus.status) {
-						statusListener(mediaStatus.status);
-						if (mediaStatus.status.position > 0) {
-							this._setPosition(mediaStatus.status);
-						}
-					}
-				}.bind(this));
-			}.bind(this), 1000);
-			$.ajax({
-				url: "./rest/activity/"+activityId,
-				type: "PUT",
-				headers: { "cache-control": "no-cache" },
-				contentTypeString: "application/x-www-form-urlencoded; charset=utf-8",
-				dataType: "text",
-				success: function(data, textStatus, jqXHR) {
-					console.log(data);
-				}.bind(this),
-				error: function(jqXHR, textStatus, errorThrown) {
-					console.log("download error : "+textStatus);
+		_loadUrl: function(mediaurl) {
+			var mediaInfo = new chrome.cast.media.MediaInfo(mediaurl);
+			mediaInfo.contentType = 'video/mp4';
+			var request = new chrome.cast.media.LoadRequest(mediaInfo);
+			request.autoplay = true;
+			request.currentTime = 0;
+			session.loadMedia(request, 
+				function(media) {
+					currentMedia = media;
+					currentMedia.addUpdateListener(updateListener);
+					updateListener();
+				}.bind(this), 
+				function(error) {
+					console.log("load media error : "+error);
 				}
-			});
-		},
-		_clearActivity: function() {
-			clearInterval(this.statusCheckerId);
-			currentActivity = undefined;
-			$.ajax({
-				url: "./rest/activity",
-				type: "DELETE",
-				headers: { "cache-control": "no-cache" },
-				contentTypeString: "application/x-www-form-urlencoded; charset=utf-8",
-				dataType: "text",
-				success: function(data, textStatus, jqXHR) {
-					console.log(data);
-				}.bind(this),
-				error: function(jqXHR, textStatus, errorThrown) {
-					console.log("download error : "+textStatus);
-				}
-			});
-			$.ajax({
-				url: "./rest/position",
-				type: "DELETE",
-				headers: { "cache-control": "no-cache" },
-				contentTypeString: "application/x-www-form-urlencoded; charset=utf-8",
-				dataType: "text",
-				success: function(data, textStatus, jqXHR) {
-				}.bind(this),
-				error: function(jqXHR, textStatus, errorThrown) {
-					console.log("download error : "+textStatus);
-				}
-			});
-		},
-		_setPosition: function(status) {
-			$.ajax({
-				url: "./rest/position/"+status.position+"/"+status.duration,
-				type: "PUT",
-				headers: { "cache-control": "no-cache" },
-				contentTypeString: "application/x-www-form-urlencoded; charset=utf-8",
-				dataType: "text",
-				success: function(data, textStatus, jqXHR) {
-					//console.log(data);
-				}.bind(this),
-				error: function(jqXHR, textStatus, errorThrown) {
-					console.log("download error : "+textStatus);
-				}
-			});
+			);
 		}
 	};
 });
