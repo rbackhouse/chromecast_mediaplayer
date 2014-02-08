@@ -21,6 +21,7 @@ define(function() {
 
 	var statusListeners = [];
 	var callbacks = [];
+	var available = false;
 
 	var initializeCastApi = function() {
 		var applicationID = chrome.cast.media.DEFAULT_MEDIA_RECEIVER_APP_ID;
@@ -34,6 +35,7 @@ define(function() {
 			}, 
 			function(e) {
 				if (e === 'available') {
+					available = true;
 					callbacks.forEach(function(cb) {
 						cb();
 					});
@@ -157,7 +159,11 @@ define(function() {
 			}
 		},
 		addReceiverListener: function(cb) {
-			callbacks.push(cb);
+			if (available) {
+				cb();
+			} else {
+				callbacks.push(cb);
+			}
 		},
 		getState: function() {
 			return currentMedia ? currentMedia.playerState : "";

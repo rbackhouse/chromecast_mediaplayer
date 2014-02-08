@@ -81,9 +81,11 @@ function($, Backbone, _, chromecastWeb, config, template) {
 		render: function() {
 			$(this.el).html( this.template );
 			chromecast.addReceiverListener(function() {
-				$("#statusMessage").text("Receiver available");
-				$("#playPause").removeClass( "ui-disabled" );
-				$("#stop").removeClass( "ui-disabled" );
+				setTimeout(function() {
+					$("#statusMessage").text("Receiver available");
+					$("#playPause").removeClass( "ui-disabled" );
+					$("#stop").removeClass( "ui-disabled" );
+				}, 1000);
 			}.bind(this));
 		},
 		statusListener: function(status) {
