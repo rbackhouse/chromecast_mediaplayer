@@ -54,7 +54,7 @@ define(function() {
 	};
 
 	if (!chrome.cast || !chrome.cast.isAvailable) {
-		setTimeout(initializeCastApi, 1000);
+		setTimeout(initializeCastApi, 100);
 	}
 
 	var updateListener = function(isAlive) {
