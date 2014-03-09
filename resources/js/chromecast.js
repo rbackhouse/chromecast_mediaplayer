@@ -52,11 +52,15 @@ define(function() {
 			}
 		);
 	};
-
-	if (!chrome.cast || !chrome.cast.isAvailable) {
-		setTimeout(initializeCastApi, 100);
+	
+	window['__onGCastApiAvailable'] = function(loaded, errorInfo) {
+		if (loaded) {
+			initializeCastApi();
+		} else {
+			console.log(errorInfo);
+		}
 	}
-
+	
 	var updateListener = function(isAlive) {
 		var status = {
 			isAlive: isAlive,
